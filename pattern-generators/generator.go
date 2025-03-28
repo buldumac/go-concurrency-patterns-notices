@@ -50,6 +50,21 @@ func Repeat(doneCh <-chan interface{}, values ...interface{}) <-chan interface{}
 	return stream
 }
 
+func ToString[T any](doneCh <-chan interface{}, inputCh <-chan interface{}) <-chan T {
+	outStream := make(chan T)
+	go func() {
+		defer close(outStream)
+		for val := range inputCh {
+			select {
+			case <-doneCh:
+				return
+			case outStream <- val.(T): // better to use "val, ok :=" construct, that's absolutely right
+			}
+		}
+	}()
+	return outStream
+}
+
 // RepeatFunc write result of some function indefinitely into some stream
 func RepeatFunc(doneCh <-chan interface{}, fn func() interface{}) <-chan interface{} {
 	stream := make(chan interface{})
